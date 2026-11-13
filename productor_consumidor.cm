@@ -1,0 +1,103 @@
+#include "gdefs.cm"
+
+semaphore mutex, vacios, llenos;
+
+int buffer[5];
+int fichasGraf[12];
+int celdas[5];
+
+int entrada = 0;
+int salida = 0;
+
+
+void pausa()
+{
+    int k;
+    for (k = 0; k < 3000; k++);
+}
+
+void Productor()
+{
+    int j;
+
+    for (j = 0; j < 12; j++)
+    {
+        wait(vacios);
+        wait(mutex);
+
+        buffer[entrada] = j;
+
+        
+        moveto(fichasGraf[j],
+               155 + (entrada * 50), 205);
+
+        makevisible(fichasGraf[j], 1);
+
+        pausa();
+
+        entrada = (entrada + 1) % 5;
+
+        signal(mutex);
+        signal(llenos);
+    }
+}
+
+void Consumidor()
+{
+    int j;
+    int elemento;
+
+    for (j = 0; j < 12; j++)
+    {
+        wait(llenos);
+        wait(mutex);
+
+        elemento = buffer[salida];
+
+        
+        makevisible(fichasGraf[elemento], 0);
+
+        pausa();
+
+        salida = (salida + 1) % 5;
+
+        signal(mutex);
+        signal(vacios);
+    }
+}
+
+main()
+{
+    int i;
+
+    initialsem(mutex, 1);
+    initialsem(vacios, 5);
+    initialsem(llenos, 0);
+
+    
+    for (i = 0; i < 5; i++)
+    {
+        celdas[i] = i + 1;
+
+        create(celdas[i], LINE_RECTANGLE, BLUE,
+               150 + (i * 50), 200, 40, 40);
+
+        makevisible(celdas[i], 1);
+    }
+
+    
+    for (i = 0; i < 12; i++)
+    {
+        fichasGraf[i] = i + 10;
+
+        create(fichasGraf[i], CIRCLE, GREEN,
+               155, 205, 30, 30);
+
+        makevisible(fichasGraf[i], 0);
+    }
+
+    cobegin {
+        Productor();
+        Consumidor();
+    }
+}
